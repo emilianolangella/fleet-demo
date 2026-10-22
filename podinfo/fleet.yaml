@@ -6,7 +6,7 @@ helm:
   chart: podinfo
   version: 6.15.0
   values:
-    replicaCount: 2
+    replicaCount: 3
     ui:
       message: "Deployed by Fleet from GitHub"
       color: "#30ba78"
