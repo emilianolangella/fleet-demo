@@ -1,0 +1,26 @@
+# podinfo dal chart Helm ufficiale, installato da Fleet nel namespace podinfo
+defaultNamespace: podinfo
+helm:
+  releaseName: podinfo
+  repo: https://stefanprodan.github.io/podinfo
+  chart: podinfo
+  version: 6.15.0
+  values:
+    replicaCount: 2
+    ui:
+      message: "Deployed by Fleet from GitHub"
+      color: "#30ba78"
+    ingress:
+      enabled: true
+      className: traefik
+      annotations:
+        cert-manager.io/cluster-issuer: lab-ca
+      hosts:
+        - host: podinfo.digitalairlines.com
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: podinfo-tls
+          hosts:
+            - podinfo.digitalairlines.com
