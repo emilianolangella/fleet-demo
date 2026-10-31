@@ -109,7 +109,7 @@ spec:
         kind: HarvesterConfig
         name: demo-git-controlplane
     - name: worker
-      quantity: 0
+      quantity: 1
       workerRole: true
       machineConfigRef:
         kind: HarvesterConfig
