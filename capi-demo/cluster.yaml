@@ -53,6 +53,13 @@ spec:
     type: RollingUpdate
   serverConfig:
     cni: calico
+    # Niente cloud controller integrato di RKE2: imposterebbe providerID rke2://, e Cluster API non collegherebbe la
+    # macchina al nodo (provato il 31/10/2026: macchina ferma in Provisioned). Così il providerID harvester:// lo
+    # imposta CAPHV, che toglie anche il taint uninitialized (non serve il cloud provider di Harvester nel cluster)
+    cloudProviderName: external
+    disableComponents:
+      kubernetesComponents:
+      - cloudController
   # DNS solo da Pi-hole: il router dà anche il suo DNS IPv6, che non conosce rancher.digitalairlines.com
   files:
   - path: /etc/rancher/rke2/resolv.conf

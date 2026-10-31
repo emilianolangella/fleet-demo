@@ -4,3 +4,7 @@
 # Il namespace capi-demo e il secret hv-identity-secret (kubeconfig di Harvester) non stanno su Git: li crea lo
 # script di preparazione su kong.
 defaultNamespace: capi-demo
+# Cancellando il GitRepo Fleet toglierebbe tutti gli oggetti insieme: HarvesterCluster sparisce prima delle
+# HarvesterMachine e la cancellazione delle VM si blocca (provato il 31/10/2026). Così gli oggetti restano e il cluster
+# si cancella togliendo solo l'oggetto Cluster (6-cluster-capi.sh cancella): Cluster API toglie il resto in ordine
+keepResources: true
