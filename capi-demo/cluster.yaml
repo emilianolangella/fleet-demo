@@ -48,7 +48,7 @@ metadata:
   name: demo-capi-control-plane
 spec:
   version: v1.35.9+rke2r1
-  replicas: 1
+  replicas: 3
   rolloutStrategy:
     type: RollingUpdate
   serverConfig:
