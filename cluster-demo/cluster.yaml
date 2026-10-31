@@ -85,7 +85,7 @@ spec:
   kubernetesVersion: v1.35.9+rke2r1
   # credenziale "harvester" di Rancher (Cluster Management › Cloud Credentials): cambia a ogni ricostruzione del
   # laboratorio, lo script di preparazione la controlla e la aggiorna qui
-  cloudCredentialSecretName: da-impostare
+  cloudCredentialSecretName: cattle-global-data:cc-fnvsj
   rkeConfig:
     machineGlobalConfig:
       cni: calico
