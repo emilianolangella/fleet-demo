@@ -95,7 +95,6 @@ spec:
       - volumeType: image
         imageName: default/ubuntu-2404
         volumeSize: 20Gi
-        bootOrder: 0
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: RKE2ConfigTemplate
@@ -156,4 +155,3 @@ spec:
       - volumeType: image
         imageName: default/ubuntu-2404
         volumeSize: 20Gi
-        bootOrder: 0
