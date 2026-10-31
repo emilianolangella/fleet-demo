@@ -1,0 +1,3 @@
+# Cluster "demo-git" definito su Git: Fleet applica questi oggetti al cluster local di Rancher (workspace fleet-local),
+# Rancher crea le VM in Harvester con il node driver. Guida: lab/demo/5-cluster-da-git.md nel repository kong.
+defaultNamespace: fleet-default

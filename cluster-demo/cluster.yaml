@@ -1,0 +1,116 @@
+# Cluster RKE2 "demo-git" in Harvester, creato da Rancher (provisioning v2) a partire da Git.
+# - controlplane: 1 nodo con tutti i ruoli, IP fisso 192.168.1.239
+# - worker: nodi solo worker con IP dal DHCP; per la demo si cambia quantity da 0 a 1 (commit e push)
+# Il secret del cloud provider (harvesterconfig-demo-git) non sta su Git: lo crea lo script di preparazione su kong.
+apiVersion: rke-machine-config.cattle.io/v1
+kind: HarvesterConfig
+metadata:
+  name: demo-git-controlplane
+  namespace: fleet-default
+vmNamespace: default
+cpuCount: "4"
+memorySize: "8"
+diskInfo: '{"disks":[{"imageName":"default/slmicro62","size":32,"bootOrder":1}]}'
+networkInfo: '{"interfaces":[{"networkName":"default/lan"}]}'
+sshUser: sles
+userData: |
+  #cloud-config
+  # User data per i nodi in Harvester (SL Micro 6.2), lo stesso della demo 3 (lab/demo/3-cluster-rke2-userdata.yaml)
+  # 1. Ciclo di ordinamento di SL Micro 6.2 fra health-checker e cloud-final: senza cloud-final non parte l'agente di
+  #    Rancher (dettagli in ../rancher/scripts/rke2-userdata.yaml); bootcmd li riavvia 20 secondi dopo.
+  # 2. DNS solo da Pi-hole per RKE2: il router dà anche il suo DNS IPv6, che non conosce i nomi del laboratorio, e il
+  #    cluster agent non trovava Rancher. Il drop-in in config.yaml.d evita di toccare la configurazione del cluster.
+  bootcmd:
+    - [sh, -c, "systemd-run --on-active=20 --unit=avvio-dopo-boot systemctl start --no-block cloud-final.service health-checker.service"]
+  write_files:
+    - path: /etc/rancher/rke2/resolv.conf
+      permissions: "0644"
+      content: |
+        nameserver 192.168.1.1
+        search digitalairlines.com
+    - path: /etc/rancher/rke2/config.yaml.d/50-resolv-conf.yaml
+      permissions: "0644"
+      content: |
+        resolv-conf: /etc/rancher/rke2/resolv.conf
+networkData: |
+  version: 2
+  ethernets:
+    enp1s0:
+      dhcp4: false
+      addresses: [192.168.1.239/24]
+      routes:
+        - to: 0.0.0.0/0
+          via: 192.168.1.254
+      nameservers:
+        addresses: [192.168.1.1]
+        search: [digitalairlines.com]
+---
+apiVersion: rke-machine-config.cattle.io/v1
+kind: HarvesterConfig
+metadata:
+  name: demo-git-worker
+  namespace: fleet-default
+vmNamespace: default
+cpuCount: "4"
+memorySize: "8"
+diskInfo: '{"disks":[{"imageName":"default/slmicro62","size":32,"bootOrder":1}]}'
+networkInfo: '{"interfaces":[{"networkName":"default/lan"}]}'
+sshUser: sles
+userData: |
+  #cloud-config
+  # User data per i nodi in Harvester (SL Micro 6.2), lo stesso della demo 3 (lab/demo/3-cluster-rke2-userdata.yaml)
+  # 1. Ciclo di ordinamento di SL Micro 6.2 fra health-checker e cloud-final: senza cloud-final non parte l'agente di
+  #    Rancher (dettagli in ../rancher/scripts/rke2-userdata.yaml); bootcmd li riavvia 20 secondi dopo.
+  # 2. DNS solo da Pi-hole per RKE2: il router dà anche il suo DNS IPv6, che non conosce i nomi del laboratorio, e il
+  #    cluster agent non trovava Rancher. Il drop-in in config.yaml.d evita di toccare la configurazione del cluster.
+  bootcmd:
+    - [sh, -c, "systemd-run --on-active=20 --unit=avvio-dopo-boot systemctl start --no-block cloud-final.service health-checker.service"]
+  write_files:
+    - path: /etc/rancher/rke2/resolv.conf
+      permissions: "0644"
+      content: |
+        nameserver 192.168.1.1
+        search digitalairlines.com
+    - path: /etc/rancher/rke2/config.yaml.d/50-resolv-conf.yaml
+      permissions: "0644"
+      content: |
+        resolv-conf: /etc/rancher/rke2/resolv.conf
+---
+apiVersion: provisioning.cattle.io/v1
+kind: Cluster
+metadata:
+  name: demo-git
+  namespace: fleet-default
+spec:
+  kubernetesVersion: v1.35.9+rke2r1
+  # credenziale "harvester" di Rancher (Cluster Management › Cloud Credentials): cambia a ogni ricostruzione del
+  # laboratorio, lo script di preparazione la controlla e la aggiorna qui
+  cloudCredentialSecretName: da-impostare
+  rkeConfig:
+    machineGlobalConfig:
+      cni: calico
+    machineSelectorConfig:
+    - config:
+        cloud-provider-config: secret://fleet-default:harvesterconfig-demo-git
+        cloud-provider-name: harvester
+    chartValues:
+      harvester-cloud-provider:
+        cloudConfigPath: /var/lib/rancher/rke2/etc/config-files/cloud-provider-config
+        global:
+          cattle:
+            clusterName: demo-git
+    machinePools:
+    - name: controlplane
+      quantity: 1
+      etcdRole: true
+      controlPlaneRole: true
+      workerRole: true
+      machineConfigRef:
+        kind: HarvesterConfig
+        name: demo-git-controlplane
+    - name: worker
+      quantity: 0
+      workerRole: true
+      machineConfigRef:
+        kind: HarvesterConfig
+        name: demo-git-worker
