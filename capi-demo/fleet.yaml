@@ -1,0 +1,6 @@
+# Cluster "demo-capi" definito su Git con oggetti standard di Cluster API: Fleet li applica al cluster local di
+# Rancher (workspace fleet-local), i provider di Turtles (CAPRKE2) e CAPHV creano le VM in Harvester e Turtles importa
+# il cluster in Rancher. Guida: lab/demo/6-cluster-capi.md nel repository kong.
+# Il namespace capi-demo e il secret hv-identity-secret (kubeconfig di Harvester) non stanno su Git: li crea lo
+# script di preparazione su kong.
+defaultNamespace: capi-demo

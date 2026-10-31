@@ -1,0 +1,152 @@
+# Cluster RKE2 "demo-capi" in Harvester con Cluster API (provider CAPHV e CAPRKE2, Rancher Turtles):
+# - control plane: RKE2ControlPlane con 1 nodo, dietro il LoadBalancer di Harvester su 192.168.1.248
+# - worker: MachineDeployment con replicas 0; per la demo si porta a 1 (commit e push)
+# Nodi Ubuntu 24.04 (immagine cloud default/ubuntu-2404) con IP dal DHCP.
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: Cluster
+metadata:
+  name: demo-capi
+  labels:
+    # Turtles importa il cluster in Rancher
+    cluster-api.cattle.io/rancher-auto-import: "true"
+spec:
+  controlPlaneRef:
+    apiGroup: controlplane.cluster.x-k8s.io
+    kind: RKE2ControlPlane
+    name: demo-capi-control-plane
+  infrastructureRef:
+    apiGroup: infrastructure.cluster.x-k8s.io
+    kind: HarvesterCluster
+    name: demo-capi-hv
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: HarvesterCluster
+metadata:
+  name: demo-capi-hv
+spec:
+  targetNamespace: default
+  identitySecret:
+    namespace: capi-demo
+    name: hv-identity-secret
+  loadBalancerConfig:
+    ipamType: pool
+    ipPool:
+      vmNetwork: default/lan
+      subnet: 192.168.1.0/24
+      gateway: 192.168.1.254
+      rangeStart: 192.168.1.248
+      rangeEnd: 192.168.1.248
+    listeners:
+    - name: rke2-server
+      port: 9345
+      protocol: TCP
+      backendPort: 9345
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+kind: RKE2ControlPlane
+metadata:
+  name: demo-capi-control-plane
+spec:
+  version: v1.35.9+rke2r1
+  replicas: 1
+  rolloutStrategy:
+    type: RollingUpdate
+  serverConfig:
+    cni: calico
+  # DNS solo da Pi-hole: il router dà anche il suo DNS IPv6, che non conosce rancher.digitalairlines.com
+  files:
+  - path: /etc/rancher/rke2/resolv.conf
+    permissions: "0644"
+    content: |
+      nameserver 192.168.1.1
+      search digitalairlines.com
+  - path: /etc/rancher/rke2/config.yaml.d/50-resolv-conf.yaml
+    permissions: "0644"
+    content: |
+      resolv-conf: /etc/rancher/rke2/resolv.conf
+  machineTemplate:
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: HarvesterMachineTemplate
+        name: demo-capi-cp
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: HarvesterMachineTemplate
+metadata:
+  name: demo-capi-cp
+spec:
+  template:
+    spec:
+      cpu: 4
+      memory: 8Gi
+      sshUser: ubuntu
+      sshKeyPair: default/capi-demo
+      networks:
+      - default/lan
+      volumes:
+      - volumeType: image
+        imageName: default/ubuntu-2404
+        volumeSize: 20Gi
+        bootOrder: 0
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+kind: RKE2ConfigTemplate
+metadata:
+  name: demo-capi-worker
+spec:
+  template:
+    spec:
+      files:
+      - path: /etc/rancher/rke2/resolv.conf
+        permissions: "0644"
+        content: |
+          nameserver 192.168.1.1
+          search digitalairlines.com
+      - path: /etc/rancher/rke2/config.yaml.d/50-resolv-conf.yaml
+        permissions: "0644"
+        content: |
+          resolv-conf: /etc/rancher/rke2/resolv.conf
+---
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: MachineDeployment
+metadata:
+  name: demo-capi-workers
+spec:
+  clusterName: demo-capi
+  replicas: 0
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: demo-capi
+  template:
+    spec:
+      clusterName: demo-capi
+      version: v1.35.9+rke2r1
+      bootstrap:
+        configRef:
+          apiGroup: bootstrap.cluster.x-k8s.io
+          kind: RKE2ConfigTemplate
+          name: demo-capi-worker
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: HarvesterMachineTemplate
+        name: demo-capi-wk
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: HarvesterMachineTemplate
+metadata:
+  name: demo-capi-wk
+spec:
+  template:
+    spec:
+      cpu: 4
+      memory: 8Gi
+      sshUser: ubuntu
+      sshKeyPair: default/capi-demo
+      networks:
+      - default/lan
+      volumes:
+      - volumeType: image
+        imageName: default/ubuntu-2404
+        volumeSize: 20Gi
+        bootOrder: 0
