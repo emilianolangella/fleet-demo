@@ -47,7 +47,7 @@ kind: RKE2ControlPlane
 metadata:
   name: demo-capi-control-plane
 spec:
-  version: v1.35.9+rke2r1
+  version: v1.36.6+rke2r1
   replicas: 1
   rolloutStrategy:
     type: RollingUpdate
@@ -127,7 +127,7 @@ spec:
   template:
     spec:
       clusterName: demo-capi
-      version: v1.35.9+rke2r1
+      version: v1.36.6+rke2r1
       bootstrap:
         configRef:
           apiGroup: bootstrap.cluster.x-k8s.io
