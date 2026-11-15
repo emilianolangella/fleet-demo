@@ -120,7 +120,7 @@ metadata:
   name: demo-capi-workers
 spec:
   clusterName: demo-capi
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       cluster.x-k8s.io/cluster-name: demo-capi
